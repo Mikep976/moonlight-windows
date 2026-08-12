@@ -15,10 +15,15 @@ CenteredGridView {
     id: pcGrid
     focus: true
     activeFocusOnTab: true
-    topMargin: 20
-    bottomMargin: 5
-    cellWidth: 310; cellHeight: 330;
+    topMargin: 24
+    bottomMargin: 16
+    cellWidth: 340
+    cellHeight: 260
     objectName: qsTr("Computers")
+
+    WindowsStyle {
+        id: pcStyle
+    }
 
     Component.onCompleted: {
         // Don't show any highlighted item until interacting with them.
@@ -82,23 +87,27 @@ CenteredGridView {
         return model
     }
 
-    Row {
+    Column {
         anchors.centerIn: parent
-        spacing: 5
+        width: Math.min(parent.width - (pcStyle.space32 * 2), 680)
+        spacing: pcStyle.space16
         visible: pcGrid.count === 0
 
         BusyIndicator {
             id: searchSpinner
+            anchors.horizontalCenter: parent.horizontalCenter
             visible: StreamingPreferences.enableMdns
             running: visible
         }
 
         Label {
-            height: searchSpinner.height
+            width: parent.width
             elide: Label.ElideRight
             text: StreamingPreferences.enableMdns ? qsTr("Searching for compatible hosts on your local network...")
                                                   : qsTr("Automatic PC discovery is disabled. Add your PC manually.")
-            font.pointSize: 20
+            color: pcStyle.textSecondary
+            font.pixelSize: 18
+            horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             wrapMode: Text.Wrap
         }
@@ -107,57 +116,80 @@ CenteredGridView {
     model: computerModel
 
     delegate: NavigableItemDelegate {
-        width: 300; height: 320;
+        width: 324
+        height: 244
         grid: pcGrid
 
         property alias pcContextMenu : pcContextMenuLoader.item
 
-        Image {
-            id: pcIcon
-            anchors.horizontalCenter: parent.horizontalCenter
-            source: "qrc:/res/desktop_windows-48px.svg"
-            sourceSize {
-                width: 200
-                height: 200
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: pcStyle.space20
+            spacing: pcStyle.space8
+
+            Item {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 116
+
+                Image {
+                    id: pcIcon
+                    anchors.centerIn: parent
+                    source: "qrc:/res/desktop_windows-48px.svg"
+                    sourceSize {
+                        width: 92
+                        height: 92
+                    }
+                }
+
+                Image {
+                    id: stateIcon
+                    anchors.right: pcIcon.right
+                    anchors.bottom: pcIcon.bottom
+                    anchors.rightMargin: -4
+                    anchors.bottomMargin: -4
+                    visible: !model.statusUnknown && (!model.online || !model.paired)
+                    source: !model.online ? "qrc:/res/warning_FILL1_wght300_GRAD200_opsz24.svg" : "qrc:/res/baseline-lock-24px.svg"
+                    sourceSize {
+                        width: 38
+                        height: 38
+                    }
+                }
+
+                BusyIndicator {
+                    id: statusUnknownSpinner
+                    anchors.centerIn: pcIcon
+                    width: 44
+                    height: 44
+                    visible: model.statusUnknown
+                    running: visible
+                }
             }
-        }
 
-        Image {
-            // TODO: Tooltip
-            id: stateIcon
-            anchors.horizontalCenter: pcIcon.horizontalCenter
-            anchors.verticalCenter: pcIcon.verticalCenter
-            anchors.verticalCenterOffset: !model.online ? -18 : -16
-            visible: !model.statusUnknown && (!model.online || !model.paired)
-            source: !model.online ? "qrc:/res/warning_FILL1_wght300_GRAD200_opsz24.svg" : "qrc:/res/baseline-lock-24px.svg"
-            sourceSize {
-                width: !model.online ? 75 : 70
-                height: !model.online ? 75 : 70
+            Label {
+                id: pcNameText
+                Layout.fillWidth: true
+                text: model.name
+                color: pcStyle.textPrimary
+                font.pixelSize: 24
+                font.weight: Font.DemiBold
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                wrapMode: Text.Wrap
+                elide: Text.ElideRight
+                maximumLineCount: 2
             }
-        }
 
-        BusyIndicator {
-            id: statusUnknownSpinner
-            anchors.horizontalCenter: pcIcon.horizontalCenter
-            anchors.verticalCenter: pcIcon.verticalCenter
-            anchors.verticalCenterOffset: -15
-            width: 75
-            height: 75
-            visible: model.statusUnknown
-            running: visible
-        }
-
-        Label {
-            id: pcNameText
-            text: model.name
-
-            width: parent.width
-            anchors.top: pcIcon.bottom
-            anchors.bottom: parent.bottom
-            font.pointSize: 36
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.Wrap
-            elide: Text.ElideRight
+            Label {
+                Layout.fillWidth: true
+                text: model.statusUnknown ? qsTr("Checking status…") :
+                      !model.online ? qsTr("Offline") :
+                      !model.paired ? qsTr("Pair to stream") : qsTr("Ready to stream")
+                color: !model.statusUnknown && model.online && model.paired ? pcStyle.accent : pcStyle.textSecondary
+                font.pixelSize: 14
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+                elide: Text.ElideRight
+            }
         }
 
         Loader {
