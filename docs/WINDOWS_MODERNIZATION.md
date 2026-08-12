@@ -2,6 +2,8 @@
 
 This fork keeps Moonlight's protocol and streaming engine close to upstream while rebuilding the Windows product experience around it.
 
+See [WINDOWS_BUILD.md](WINDOWS_BUILD.md) for the Windows x64/ARM64 build baseline.
+
 ## Principles
 
 1. **Stay upstream-friendly.** Keep Moonlight protocol, pairing, networking, codec, and renderer changes isolated whenever possible so upstream fixes remain easy to merge.
@@ -50,14 +52,14 @@ This is the primary modernization surface.
 
 - [x] Create a modernization branch from `master`
 - [x] Add shared Windows design tokens
-- [ ] Replace legacy Material-era app chrome with a responsive Windows-style shell
-- [ ] Modernize reusable toolbar/navigation controls while preserving keyboard and gamepad focus behavior
+- [x] Replace legacy Material-era app chrome with a responsive Windows-style shell
+- [x] Modernize reusable toolbar/navigation controls while preserving keyboard and gamepad focus behavior
 - [ ] Keep x64 and native ARM64 CI green
-- [ ] Add build/contribution notes for this fork
+- [x] Add build/contribution notes for this fork
 
 ### Phase 1 — library and settings
 
-- [ ] Touch-friendly host cards
+- [x] Touch-friendly host cards
 - [ ] Responsive app/game library
 - [ ] Search, favorites, recent apps
 - [ ] Split the monolithic settings screen into maintainable components
