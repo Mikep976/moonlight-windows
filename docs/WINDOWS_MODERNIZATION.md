@@ -60,7 +60,7 @@ This is the primary modernization surface.
 ### Phase 1 — library and settings
 
 - [x] Touch-friendly host cards
-- [ ] Responsive app/game library
+- [x] Responsive app/game library
 - [ ] Search, favorites, recent apps
 - [ ] Split the monolithic settings screen into maintainable components
 - [ ] Per-game streaming profiles
