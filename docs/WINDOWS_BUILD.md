@@ -15,6 +15,8 @@ The existing GitHub Actions workflow uses:
 
 Do not remove either Windows architecture from CI when changing the UI, renderer, input stack, packaging, or dependencies.
 
+On a newly created GitHub fork, Actions may be disabled until the repository owner explicitly enables the inherited workflows from the repository's **Actions** tab. Do this before treating a pull request as validated; otherwise the workflow YAML can be present without any build runs being created.
+
 ## Local prerequisites
 
 For Windows development, install Visual Studio 2022 with the C++ desktop toolchain and a compatible Qt 6 MSVC kit. The build script locates Visual Studio with the repository's `vswhere.exe` and selects the appropriate native or cross-compiling toolchain automatically.
