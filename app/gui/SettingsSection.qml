@@ -11,13 +11,12 @@ Item {
     default property alias contentData: contentColumn.data
 
     implicitWidth: 480
-    implicitHeight: card.implicitHeight
+    implicitHeight: contentColumn.implicitHeight + (windowsStyle.space16 * 2)
+    height: implicitHeight
 
     Rectangle {
         id: card
-        anchors.left: parent.left
-        anchors.right: parent.right
-        implicitHeight: contentColumn.implicitHeight + (root.windowsStyle.space16 * 2)
+        anchors.fill: parent
         radius: root.windowsStyle.radiusLarge
         color: root.windowsStyle.surface
         border.width: 1
