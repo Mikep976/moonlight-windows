@@ -51,6 +51,9 @@ SettingsSection {
                     break
                 }
             }
+
+            // Preserve the legacy behavior that normalizes stale/invalid values.
+            activated(currentIndex)
         }
 
         onActivated: {
@@ -60,6 +63,7 @@ SettingsSection {
 
     CheckBox {
         Layout.fillWidth: true
+        hoverEnabled: true
         text: qsTr("Mute host PC speakers while streaming")
         font.pixelSize: 14
         checked: !StreamingPreferences.playAudioOnHost
@@ -77,6 +81,7 @@ SettingsSection {
     CheckBox {
         Layout.fillWidth: true
         visible: SystemProperties.hasDesktopEnvironment
+        hoverEnabled: true
         text: qsTr("Mute audio stream when Moonlight is not the active window")
         font.pixelSize: 14
         checked: StreamingPreferences.muteOnFocusLoss
