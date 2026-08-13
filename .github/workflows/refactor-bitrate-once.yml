@@ -1,0 +1,177 @@
+---
+name: One-time bitrate settings decoupling
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/refactor-bitrate-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: github.repository == 'Mikep976/moonlight-windows' && github.event.pull_request.head.ref == 'agent/windows-modernization-foundation'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Decouple shared bitrate state
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          path = Path('app/gui/SettingsView.qml')
+          text = path.read_text(encoding='utf-8')
+
+          def matching_brace(source, opening):
+              depth = 0
+              quote = None
+              escaped = False
+              line_comment = False
+              block_comment = False
+              i = opening
+
+              while i < len(source):
+                  ch = source[i]
+                  nxt = source[i + 1] if i + 1 < len(source) else ''
+
+                  if line_comment:
+                      if ch == '\n':
+                          line_comment = False
+                      i += 1
+                      continue
+                  if block_comment:
+                      if ch == '*' and nxt == '/':
+                          block_comment = False
+                          i += 2
+                      else:
+                          i += 1
+                      continue
+                  if quote:
+                      if escaped:
+                          escaped = False
+                      elif ch == '\\':
+                          escaped = True
+                      elif ch == quote:
+                          quote = None
+                      i += 1
+                      continue
+                  if ch == '/' and nxt == '/':
+                      line_comment = True
+                      i += 2
+                      continue
+                  if ch == '/' and nxt == '*':
+                      block_comment = True
+                      i += 2
+                      continue
+                  if ch in ('"', "'"):
+                      quote = ch
+                      i += 1
+                      continue
+                  if ch == '{':
+                      depth += 1
+                  elif ch == '}':
+                      depth -= 1
+                      if depth == 0:
+                          return i
+                  i += 1
+
+              raise RuntimeError('Unmatched QML brace')
+
+          controller_anchor = '    signal languageChanged()\n'
+          controller_block = '''    signal languageChanged()\n\n    SettingsBitrateController {\n        id: bitrateController\n    }\n'''
+          if 'id: bitrateController' not in text:
+              if text.count(controller_anchor) != 1:
+                  raise RuntimeError('Unexpected languageChanged signal count')
+              text = text.replace(controller_anchor, controller_block, 1)
+
+          default_pattern = re.compile(
+              r'StreamingPreferences\.bitrateKbps = StreamingPreferences\.getDefaultBitrate\('
+              r'StreamingPreferences\.width,\s*StreamingPreferences\.height,\s*'
+              r'StreamingPreferences\.fps,\s*StreamingPreferences\.enableYUV444\);\s*'
+              r'slider\.value = StreamingPreferences\.bitrateKbps'
+          )
+          text, default_count = default_pattern.subn('bitrateController.recalculateDefaultIfAutomatic()', text)
+          if default_count != 3:
+              raise RuntimeError(f'Expected 3 default bitrate cross-references, found {default_count}')
+
+          old_limit = 'to: StreamingPreferences.unlockBitrate ? 500000 : 150000'
+          if text.count(old_limit) != 1:
+              raise RuntimeError('Unexpected bitrate slider limit count')
+          text = text.replace(old_limit, 'to: bitrateController.maximumKbps', 1)
+
+          old_completed = '''                        Component.onCompleted: {\n                            // Refresh the text after translations change\n                            languageChanged.connect(valueChanged)\n                        }\n'''
+          new_completed = '''                        Component.onCompleted: {\n                            // Refresh the text after translations change\n                            languageChanged.connect(valueChanged)\n                        }\n\n                        Connections {\n                            target: bitrateController\n                            onBitrateChanged: slider.value = bitrateKbps\n                        }\n'''
+          if text.count(old_completed) != 1:
+              raise RuntimeError('Could not locate bitrate slider completion handler')
+          text = text.replace(old_completed, new_completed, 1)
+
+          reset_pattern = re.compile(
+              r'onClicked: \{\s*'
+              r'var defaultBitrate = StreamingPreferences\.getDefaultBitrate\('
+              r'StreamingPreferences\.width, StreamingPreferences\.height, '
+              r'StreamingPreferences\.fps, StreamingPreferences\.enableYUV444\)\s*'
+              r'StreamingPreferences\.bitrateKbps = defaultBitrate\s*'
+              r'StreamingPreferences\.autoAdjustBitrate = true\s*'
+              r'slider\.value = defaultBitrate\s*\}'
+          )
+          text, reset_count = reset_pattern.subn('onClicked: {\n                            bitrateController.resetToDefault()\n                        }', text)
+          if reset_count != 1:
+              raise RuntimeError(f'Expected one default bitrate reset handler, found {reset_count}')
+
+          def replace_checked_handler(source, object_id, replacement_body):
+              marker = f'id: {object_id}'
+              marker_pos = source.find(marker)
+              if marker_pos < 0:
+                  raise RuntimeError(f'Could not find {marker}')
+
+              handler_pos = source.find('onCheckedChanged:', marker_pos)
+              if handler_pos < 0:
+                  raise RuntimeError(f'Could not find onCheckedChanged for {object_id}')
+              opening = source.find('{', handler_pos)
+              closing = matching_brace(source, opening)
+              indent_start = source.rfind('\n', 0, handler_pos) + 1
+              indent = source[indent_start:handler_pos]
+              replacement = f'onCheckedChanged: {{\n{indent}    {replacement_body}\n{indent}}}'
+              return source[:handler_pos] + replacement + source[closing + 1:]
+
+          text = replace_checked_handler(text, 'enableYUV444', 'bitrateController.setYuv444Enabled(checked)')
+          text = replace_checked_handler(text, 'unlockBitrate', 'bitrateController.setUnlockBitrateEnabled(checked)')
+
+          advanced_pos = text.find('id: advancedSettingsGroupBox')
+          if advanced_pos < 0:
+              raise RuntimeError('Advanced settings group not found')
+          if 'slider.' in text[advanced_pos:]:
+              raise RuntimeError('Advanced settings still directly references the Basic bitrate slider')
+
+          path.write_text(text, encoding='utf-8')
+
+      - name: Validate migration diff
+        shell: bash
+        run: |
+          git diff --check
+          git diff --stat -- app/gui/SettingsView.qml
+          git diff -- app/gui/SettingsView.qml
+
+      - name: Commit migration
+        shell: bash
+        run: |
+          if git diff --quiet -- app/gui/SettingsView.qml; then
+            echo "No bitrate migration changes to commit"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/gui/SettingsView.qml
+          git commit -m "decouple shared bitrate settings state"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
