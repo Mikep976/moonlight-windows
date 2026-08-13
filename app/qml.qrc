@@ -5,6 +5,7 @@
         <file>gui/AppView.qml</file>
         <file>gui/SettingsView.qml</file>
         <file>gui/SettingsSection.qml</file>
+        <file>gui/SettingsNavButton.qml</file>
         <file>gui/SettingsBitrateController.qml</file>
         <file>gui/SettingsStreamingSection.qml</file>
         <file>gui/SettingsAdvancedSection.qml</file>
