@@ -81,6 +81,9 @@ SettingsSection {
                         break
                     }
                 }
+
+                // Preserve the legacy behavior that normalizes stale/invalid values.
+                activated(currentIndex)
             }
 
             function updatePref() {
