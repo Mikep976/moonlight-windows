@@ -6,6 +6,8 @@
         <file>gui/SettingsView.qml</file>
         <file>gui/SettingsSection.qml</file>
         <file>gui/SettingsBitrateController.qml</file>
+        <file>gui/SettingsStreamingSection.qml</file>
+        <file>gui/SettingsAdvancedSection.qml</file>
         <file>gui/SettingsAudioSection.qml</file>
         <file>gui/SettingsHostSection.qml</file>
         <file>gui/SettingsUiSection.qml</file>
