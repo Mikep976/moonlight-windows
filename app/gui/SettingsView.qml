@@ -279,11 +279,20 @@ Item {
                     height: childrenRect.height
                     spacing: windowsStyle.space16
 
-                    SettingsStreamingSection {
-                        id: streamingSettingsSection
+                    SettingsSection {
                         width: parent.width
                         visible: settingsPage.selectedSection === 0
-                        bitrateState: bitrateController
+                        title: qsTr("Streaming")
+                        description: qsTr("Resolution, frame rate, bitrate, display mode, and streaming behavior.")
+
+                        SettingsStreamingSection {
+                            id: streamingSettingsSection
+                            Layout.fillWidth: true
+                            bitrateState: bitrateController
+                            title: ""
+                            padding: 0
+                            background: Item {}
+                        }
                     }
 
                     SettingsAudioSection {
@@ -318,16 +327,25 @@ Item {
                         visible: settingsPage.selectedSection === 5
                     }
 
-                    SettingsAdvancedSection {
-                        id: advancedSettingsSection
+                    SettingsSection {
                         width: parent.width
                         visible: settingsPage.selectedSection === 6
-                        bitrateState: bitrateController
+                        title: qsTr("Advanced")
+                        description: qsTr("Decoder, codec, HDR, network discovery, and diagnostics.")
 
-                        onDiscoverySettingsChanged: {
-                            if (window.pollingActive) {
-                                ComputerManager.stopPollingAsync()
-                                ComputerManager.startPolling()
+                        SettingsAdvancedSection {
+                            id: advancedSettingsSection
+                            Layout.fillWidth: true
+                            bitrateState: bitrateController
+                            title: ""
+                            padding: 0
+                            background: Item {}
+
+                            onDiscoverySettingsChanged: {
+                                if (window.pollingActive) {
+                                    ComputerManager.stopPollingAsync()
+                                    ComputerManager.startPolling()
+                                }
                             }
                         }
                     }
