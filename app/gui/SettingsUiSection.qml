@@ -65,6 +65,9 @@ SettingsSection {
                     break
                 }
             }
+
+            // Preserve the legacy behavior that normalizes stale/invalid values.
+            activated(currentIndex)
         }
 
         onActivated: {
@@ -119,6 +122,9 @@ SettingsSection {
                     break
                 }
             }
+
+            // Preserve the legacy behavior that normalizes stale/invalid values.
+            activated(currentIndex)
         }
 
         Component.onCompleted: {
@@ -156,6 +162,7 @@ SettingsSection {
     CheckBox {
         Layout.fillWidth: true
         visible: SystemProperties.hasDiscordIntegration
+        hoverEnabled: true
         text: qsTr("Discord Rich Presence integration")
         font.pixelSize: 14
         checked: StreamingPreferences.richPresence
@@ -172,6 +179,7 @@ SettingsSection {
 
     CheckBox {
         Layout.fillWidth: true
+        hoverEnabled: true
         text: qsTr("Keep the display awake while streaming")
         font.pixelSize: 14
         checked: StreamingPreferences.keepAwake
