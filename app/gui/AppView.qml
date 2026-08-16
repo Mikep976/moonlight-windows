@@ -1,6 +1,5 @@
 import QtQuick 2.9
 import QtQuick.Controls 2.2
-import QtQuick.Controls.Material 2.2
 
 import AppModel 1.0
 import ComputerManager 1.0
@@ -16,9 +15,14 @@ CenteredGridView {
     id: appGrid
     focus: true
     activeFocusOnTab: true
-    topMargin: 20
-    bottomMargin: 5
-    cellWidth: 230; cellHeight: 297;
+    topMargin: 24
+    bottomMargin: 16
+    cellWidth: 240
+    cellHeight: 342
+
+    WindowsStyle {
+        id: appStyle
+    }
 
     function computerLost()
     {
@@ -71,136 +75,181 @@ CenteredGridView {
     model: appModel
 
     delegate: NavigableItemDelegate {
-        width: 220; height: 287;
+        id: appCard
+        width: 224
+        height: 326
         grid: appGrid
 
         property alias appContextMenu: appContextMenuLoader.item
-        property alias appNameText: appNameTextLoader.item
+        property alias appNameText: appNameLabel
 
         // Dim the app if it's hidden
         opacity: model.hidden ? 0.4 : 1.0
 
-        Image {
-            property bool isPlaceholder: false
-
-            id: appIcon
+        Rectangle {
+            id: artFrame
+            width: 194
+            height: 259
+            anchors.top: parent.top
+            anchors.topMargin: appStyle.space12
             anchors.horizontalCenter: parent.horizontalCenter
-            y: 10
-            source: model.boxart
+            radius: appStyle.radiusMedium
+            color: appStyle.background
+            clip: true
 
-            onSourceSizeChanged: {
-                // Nearly all of Nvidia's official box art does not match the dimensions of placeholder
-                // images, however the one known exception is Overcooked. Therefore, we only execute
-                // the image size checks if this is not an app collector game. We know the officially
-                // supported games all have box art, so this check is not required.
-                if (!model.isAppCollectorGame &&
-                    ((sourceSize.width === 130 && sourceSize.height === 180) || // GFE 2.0 placeholder image
-                     (sourceSize.width === 628 && sourceSize.height === 888) || // GFE 3.0 placeholder image
-                     (sourceSize.width === 200 && sourceSize.height === 266)))  // Our no_app_image.png
-                {
-                    isPlaceholder = true
-                }
-                else
-                {
-                    isPlaceholder = false
+            Image {
+                property bool isPlaceholder: false
+
+                id: appIcon
+                anchors.fill: parent
+                source: model.boxart
+                fillMode: Image.Stretch
+
+                onSourceSizeChanged: {
+                    // Nearly all of Nvidia's official box art does not match the dimensions of placeholder
+                    // images, however the one known exception is Overcooked. Therefore, we only execute
+                    // the image size checks if this is not an app collector game. We know the officially
+                    // supported games all have box art, so this check is not required.
+                    if (!model.isAppCollectorGame &&
+                        ((sourceSize.width === 130 && sourceSize.height === 180) || // GFE 2.0 placeholder image
+                         (sourceSize.width === 628 && sourceSize.height === 888) || // GFE 3.0 placeholder image
+                         (sourceSize.width === 200 && sourceSize.height === 266)))  // Our no_app_image.png
+                    {
+                        isPlaceholder = true
+                    }
+                    else
+                    {
+                        isPlaceholder = false
+                    }
                 }
 
-                width = 200
-                height = 267
+                // Display a tooltip with the full name if it's truncated
+                ToolTip.text: model.name
+                ToolTip.delay: 700
+                ToolTip.timeout: 5000
+                ToolTip.visible: (appCard.hovered || appCard.highlighted) && appNameLabel.truncated
             }
 
-            // Display a tooltip with the full name if it's truncated
-            ToolTip.text: model.name
-            ToolTip.delay: 1000
-            ToolTip.timeout: 5000
-            ToolTip.visible: (parent.hovered || parent.highlighted) && (!appNameText || appNameText.truncated)
-        }
+            Loader {
+                active: model.running
+                asynchronous: true
+                anchors.fill: parent
 
-        Loader {
-            active: model.running
-            asynchronous: true
-            anchors.fill: appIcon
-
-            sourceComponent: Item {
-                RoundButton {
-                    // Don't steal focus from the toolbar buttons
-                    focusPolicy: Qt.NoFocus
-
-                    anchors.horizontalCenterOffset: appIcon.isPlaceholder ? -47 : 0
-                    anchors.verticalCenterOffset: appIcon.isPlaceholder ? -75 : -60
-                    anchors.centerIn: parent
-                    implicitWidth: 85
-                    implicitHeight: 85
-
-                    icon.source: "qrc:/res/play_arrow_FILL1_wght700_GRAD200_opsz48.svg"
-                    icon.width: 75
-                    icon.height: 75
-
-                    onClicked: {
-                        launchOrResumeSelectedApp(true)
+                sourceComponent: Item {
+                    Rectangle {
+                        anchors.fill: parent
+                        color: "#66000000"
                     }
 
-                    ToolTip.text: qsTr("Resume Game")
-                    ToolTip.delay: 1000
-                    ToolTip.timeout: 3000
-                    ToolTip.visible: hovered
+                    Row {
+                        anchors.centerIn: parent
+                        spacing: appStyle.space12
 
-                    Material.background: "#D0808080"
-                }
+                        RoundButton {
+                            id: resumeButton
+                            // Don't steal focus from the toolbar buttons
+                            focusPolicy: Qt.NoFocus
+                            implicitWidth: 52
+                            implicitHeight: 52
 
-                RoundButton {
-                    // Don't steal focus from the toolbar buttons
-                    focusPolicy: Qt.NoFocus
+                            icon.source: "qrc:/res/play_arrow_FILL1_wght700_GRAD200_opsz48.svg"
+                            icon.width: appStyle.iconLarge
+                            icon.height: appStyle.iconLarge
+                            icon.color: appStyle.textPrimary
 
-                    anchors.horizontalCenterOffset: appIcon.isPlaceholder ? 47 : 0
-                    anchors.verticalCenterOffset: appIcon.isPlaceholder ? -75 : 60
-                    anchors.centerIn: parent
-                    implicitWidth: 85
-                    implicitHeight: 85
+                            background: Rectangle {
+                                radius: width / 2
+                                color: resumeButton.down ? appStyle.surfacePressed :
+                                       resumeButton.hovered ? appStyle.surfaceHover : appStyle.surfaceElevated
+                                border.width: 1
+                                border.color: appStyle.border
+                            }
 
-                    icon.source: "qrc:/res/stop_FILL1_wght700_GRAD200_opsz48.svg"
-                    icon.width: 75
-                    icon.height: 75
+                            onClicked: {
+                                launchOrResumeSelectedApp(true)
+                            }
 
-                    onClicked: {
-                        doQuitGame()
+                            ToolTip.text: qsTr("Resume Game")
+                            ToolTip.delay: 700
+                            ToolTip.timeout: 3000
+                            ToolTip.visible: hovered
+                        }
+
+                        RoundButton {
+                            id: quitButton
+                            // Don't steal focus from the toolbar buttons
+                            focusPolicy: Qt.NoFocus
+                            implicitWidth: 52
+                            implicitHeight: 52
+
+                            icon.source: "qrc:/res/stop_FILL1_wght700_GRAD200_opsz48.svg"
+                            icon.width: appStyle.iconLarge
+                            icon.height: appStyle.iconLarge
+                            icon.color: appStyle.textPrimary
+
+                            background: Rectangle {
+                                radius: width / 2
+                                color: quitButton.down ? appStyle.surfacePressed :
+                                       quitButton.hovered ? appStyle.surfaceHover : appStyle.surfaceElevated
+                                border.width: 1
+                                border.color: appStyle.border
+                            }
+
+                            onClicked: {
+                                doQuitGame()
+                            }
+
+                            ToolTip.text: qsTr("Quit Game")
+                            ToolTip.delay: 700
+                            ToolTip.timeout: 3000
+                            ToolTip.visible: hovered
+                        }
                     }
 
-                    ToolTip.text: qsTr("Quit Game")
-                    ToolTip.delay: 1000
-                    ToolTip.timeout: 3000
-                    ToolTip.visible: hovered
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.bottom: parent.bottom
+                        anchors.leftMargin: appStyle.space8
+                        anchors.bottomMargin: appStyle.space8
+                        height: 26
+                        width: runningLabel.implicitWidth + appStyle.space16
+                        radius: height / 2
+                        color: appStyle.surfaceElevated
+                        border.width: 1
+                        border.color: appStyle.accent
 
-                    Material.background: "#D0808080"
+                        Label {
+                            id: runningLabel
+                            anchors.centerIn: parent
+                            text: qsTr("Running")
+                            color: appStyle.textPrimary
+                            font.pixelSize: 12
+                            font.weight: Font.DemiBold
+                        }
+                    }
                 }
             }
         }
 
-        Loader {
-            id: appNameTextLoader
-            active: appIcon.isPlaceholder
-
-            // This loader is not asynchronous to avoid noticeable differences
-            // in the time in which the text loads for each game.
-
-            width: appIcon.width
-            height: model.running ? 175 : appIcon.height
-
-            anchors.left: appIcon.left
-            anchors.right: appIcon.right
-            anchors.bottom: appIcon.bottom
-
-            sourceComponent: Label {
-                id: appNameText
-                text: model.name
-                font.pointSize: 22
-                leftPadding: 20
-                rightPadding: 20
-                verticalAlignment: Text.AlignVCenter
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.Wrap
-                elide: Text.ElideRight
-            }
+        Label {
+            id: appNameLabel
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: artFrame.bottom
+            anchors.topMargin: appStyle.space8
+            anchors.leftMargin: appStyle.space12
+            anchors.rightMargin: appStyle.space12
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: appStyle.space8
+            text: model.name
+            color: appStyle.textPrimary
+            font.pixelSize: 15
+            font.weight: Font.Medium
+            verticalAlignment: Text.AlignVCenter
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.Wrap
+            elide: Text.ElideRight
+            maximumLineCount: 2
         }
 
         function launchOrResumeSelectedApp(quitExistingApp)
@@ -312,7 +361,7 @@ CenteredGridView {
                     enabled: !model.hidden
 
                     ToolTip.text: qsTr("Launch this app immediately when the host is selected, bypassing the app selection grid.")
-                    ToolTip.delay: 1000
+                    ToolTip.delay: 700
                     ToolTip.timeout: 3000
                     ToolTip.visible: hovered
                 }
@@ -324,7 +373,7 @@ CenteredGridView {
                     enabled: model.hidden || (!model.running && !model.directLaunch)
 
                     ToolTip.text: qsTr("Hide this game from the app grid. To access hidden games, right-click on the host and choose %1.").arg(qsTr("View All Apps"))
-                    ToolTip.delay: 1000
+                    ToolTip.delay: 700
                     ToolTip.timeout: 5000
                     ToolTip.visible: hovered
                 }
@@ -332,17 +381,16 @@ CenteredGridView {
         }
     }
 
-    Row {
+    Label {
         anchors.centerIn: parent
-        spacing: 5
+        width: Math.min(parent.width - (appStyle.space32 * 2), 680)
         visible: appGrid.count === 0
-
-        Label {
-            text: qsTr("This computer doesn't seem to have any applications or some applications are hidden")
-            font.pointSize: 20
-            verticalAlignment: Text.AlignVCenter
-            wrapMode: Text.Wrap
-        }
+        text: qsTr("This computer doesn't seem to have any applications or some applications are hidden")
+        color: appStyle.textSecondary
+        font.pixelSize: 18
+        horizontalAlignment: Text.AlignHCenter
+        verticalAlignment: Text.AlignVCenter
+        wrapMode: Text.Wrap
     }
 
     NavigableMessageDialog {

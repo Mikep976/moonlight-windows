@@ -22,6 +22,10 @@ ApplicationWindow {
     width: 1280
     height: 600
 
+    WindowsStyle {
+        id: windowsStyle
+    }
+
     // This function runs prior to creation of the initial StackView item
     function doEarlyInit() {
         // Override the background color to Material 2 colors for Qt 6.5+
@@ -235,32 +239,36 @@ ApplicationWindow {
 
     header: ToolBar {
         id: toolBar
-        height: 60
-        anchors.topMargin: 5
-        anchors.bottomMargin: 5
+        height: windowsStyle.toolbarHeight
+        padding: 0
 
-        Label {
-            id: titleLabel
-            visible: toolBar.width > 700
-            anchors.fill: parent
-            text: stackView.currentItem.objectName
-            font.pointSize: 20
-            elide: Label.ElideRight
-            horizontalAlignment: Qt.AlignHCenter
-            verticalAlignment: Qt.AlignVCenter
+        background: Rectangle {
+            color: windowsStyle.surface
+
+            Rectangle {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                height: 1
+                color: windowsStyle.border
+            }
         }
 
         RowLayout {
-            spacing: 10
-            anchors.leftMargin: 10
-            anchors.rightMargin: 10
             anchors.fill: parent
+            anchors.leftMargin: windowsStyle.space16
+            anchors.rightMargin: windowsStyle.space16
+            spacing: windowsStyle.space8
 
             NavigableToolButton {
-                // Only make the button visible if the user has navigated somewhere.
+                id: backButton
                 visible: stackView.depth > 1
-
                 iconSource: "qrc:/res/arrow_left.svg"
+
+                ToolTip.delay: 700
+                ToolTip.timeout: 3000
+                ToolTip.visible: hovered
+                ToolTip.text: qsTr("Back")
 
                 onClicked: goBack()
 
@@ -269,29 +277,31 @@ ApplicationWindow {
                 }
             }
 
-            // This label will appear when the window gets too small and
-            // we need to ensure the toolbar controls don't collide
-            Label {
-                id: titleRowLabel
-                font.pointSize: titleLabel.font.pointSize
-                elide: Label.ElideRight
-                horizontalAlignment: Qt.AlignHCenter
-                verticalAlignment: Qt.AlignVCenter
+            ColumnLayout {
                 Layout.fillWidth: true
+                spacing: 0
 
-                // We need this label to always be visible so it can occupy
-                // the remaining space in the RowLayout. To "hide" it, we
-                // just set the text to empty string.
-                text: !titleLabel.visible ? stackView.currentItem.objectName : ""
-            }
+                Label {
+                    id: titleLabel
+                    Layout.fillWidth: true
+                    text: stackView.currentItem ? stackView.currentItem.objectName : ""
+                    color: windowsStyle.textPrimary
+                    font.pixelSize: 20
+                    font.weight: Font.DemiBold
+                    elide: Label.ElideRight
+                    verticalAlignment: Qt.AlignVCenter
+                }
 
-            Label {
-                id: versionLabel
-                visible: stackView.currentItem instanceof SettingsView
-                text: qsTr("Version %1").arg(SystemProperties.versionString)
-                font.pointSize: 12
-                horizontalAlignment: Qt.AlignRight
-                verticalAlignment: Qt.AlignVCenter
+                Label {
+                    id: versionLabel
+                    visible: stackView.currentItem instanceof SettingsView
+                    Layout.fillWidth: true
+                    text: qsTr("Version %1").arg(SystemProperties.versionString)
+                    color: windowsStyle.textSecondary
+                    font.pixelSize: 12
+                    elide: Label.ElideRight
+                    verticalAlignment: Qt.AlignVCenter
+                }
             }
 
             NavigableToolButton {
@@ -301,7 +311,7 @@ ApplicationWindow {
 
                 iconSource: "qrc:/res/discord.svg"
 
-                ToolTip.delay: 1000
+                ToolTip.delay: 700
                 ToolTip.timeout: 3000
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Join our community on Discord")
@@ -318,9 +328,9 @@ ApplicationWindow {
                 id: addPcButton
                 visible: stackView.currentItem instanceof PcView
 
-                iconSource:  "qrc:/res/ic_add_to_queue_white_48px.svg"
+                iconSource: "qrc:/res/ic_add_to_queue_white_48px.svg"
 
-                ToolTip.delay: 1000
+                ToolTip.delay: 700
                 ToolTip.timeout: 3000
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Add PC manually") + (newPcShortcut.nativeText ? (" ("+newPcShortcut.nativeText+")") : "")
@@ -344,10 +354,9 @@ ApplicationWindow {
                 property string browserUrl: ""
 
                 id: updateButton
-
                 iconSource: "qrc:/res/update.svg"
 
-                ToolTip.delay: 1000
+                ToolTip.delay: 700
                 ToolTip.timeout: 3000
                 ToolTip.visible: hovered || visible
 
@@ -381,10 +390,9 @@ ApplicationWindow {
             NavigableToolButton {
                 id: helpButton
                 visible: SystemProperties.hasBrowser
-
                 iconSource: "qrc:/res/question_mark.svg"
 
-                ToolTip.delay: 1000
+                ToolTip.delay: 700
                 ToolTip.timeout: 3000
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Help") + (helpShortcut.nativeText ? (" ("+helpShortcut.nativeText+")") : "")
@@ -407,7 +415,7 @@ ApplicationWindow {
                 // TODO: Implement gamepad mapping then unhide this button
                 visible: false
 
-                ToolTip.delay: 1000
+                ToolTip.delay: 700
                 ToolTip.timeout: 3000
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Gamepad Mapper")
@@ -423,8 +431,7 @@ ApplicationWindow {
 
             NavigableToolButton {
                 id: settingsButton
-
-                iconSource:  "qrc:/res/settings.svg"
+                iconSource: "qrc:/res/settings.svg"
 
                 onClicked: navigateTo("qrc:/gui/SettingsView.qml", SettingsView)
 
@@ -438,7 +445,7 @@ ApplicationWindow {
                     onActivated: settingsButton.clicked()
                 }
 
-                ToolTip.delay: 1000
+                ToolTip.delay: 700
                 ToolTip.timeout: 3000
                 ToolTip.visible: hovered
                 ToolTip.text: qsTr("Settings") + (settingsShortcut.nativeText ? (" ("+settingsShortcut.nativeText+")") : "")
